@@ -9,20 +9,33 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func nmcliGetActiveConnections() []string {
-	output := basher("nmcli -f NAME -t connection show --active", "")
-	var connections []string
+func nmcliGetActiveConnections(excludeBridge bool) []string {
+	output := basher("nmcli -f NAME,TYPE -t connection show --active", "")
+	var connections, filteredConnections []string
 
 	if len(output) > 0 {
 		connections = strings.Split(output, "\n")
 	}
+	clog.WithFields(log.Fields{"raw_connections": connections}).Debug("All active connections found.")
 
-	clog.WithFields(log.Fields{"connections": connections}).Debug("Active connections found.")
-	return connections
+	for i := 0; i < len(connections)-1; i++ {
+		splitCon := strings.Split(connections[i], ":")
+		name := splitCon[0]
+		cType := splitCon[1]
+		clog.WithFields(log.Fields{"name": name, "type": cType}).Debug("Connections name and type.")
+
+		if cType == "bridge" && excludeBridge == true {
+			continue
+		}
+		filteredConnections = append(filteredConnections, name)
+	}
+
+	clog.WithFields(log.Fields{"connections": filteredConnections, "excludeBridge": excludeBridge}).Debug("Filtered active connections found.")
+	return filteredConnections
 }
 
 func nmcliConnectionActive(config string) bool {
-	connections := nmcliGetActiveConnections()
+	connections := nmcliGetActiveConnections(false)
 	sort.Strings(connections)
 	index := sort.SearchStrings(connections, config)
 
@@ -46,6 +59,7 @@ func nmcliConnectionUpPasswd(password string, passcode string, config string) {
 
 	cmd := fmt.Sprintf("nmcli connection up %v passwd-file %v", config, passwdFile)
 	basher(cmd, password)
+	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
 
 	os.Remove(passwdFile)
 }
@@ -55,6 +69,7 @@ func nmcliConnectionUpAsk(password string, passcode string, config string) {
 
 	cmd := fmt.Sprintf("echo '%v%v' | nmcli connection up %v --ask", password, passcode, config)
 	basher(cmd, password)
+	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
 }
 
 func nmcliConnectionDown(config string) {

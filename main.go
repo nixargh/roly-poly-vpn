@@ -20,7 +20,7 @@ import (
 	//	"github.com/pkg/profile"
 )
 
-var version string = "1.0.0"
+var version string = "1.1.0"
 
 var clog *log.Entry
 
@@ -85,7 +85,7 @@ func main() {
 		active := nmcliConnectionActive(config)
 		if active == false {
 			// Check whether any network connection is active
-			activeConns := nmcliGetActiveConnections()
+			activeConns := nmcliGetActiveConnections(true)
 			if len(activeConns) > 0 {
 				clog.WithFields(log.Fields{"config": config}).Info("VPN connection isn't active. Starting.")
 
