@@ -6,6 +6,7 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/zalando/go-keyring v0.2.3
+	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
 	golang.org/x/term v0.10.0
 )
 

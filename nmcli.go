@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 )
 
 func nmcliGetActiveConnections(excludeBridge bool) []string {
@@ -36,10 +36,9 @@ func nmcliGetActiveConnections(excludeBridge bool) []string {
 
 func nmcliConnectionActive(config string) bool {
 	connections := nmcliGetActiveConnections(false)
-	sort.Strings(connections)
-	index := sort.SearchStrings(connections, config)
+	index := slices.Index(connections, config)
 
-	if index == len(connections) {
+	if index == -1 {
 		return false
 	} else {
 		return true

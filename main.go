@@ -20,7 +20,7 @@ import (
 	//	"github.com/pkg/profile"
 )
 
-var version string = "1.1.0"
+var version string = "1.1.1"
 
 var clog *log.Entry
 
@@ -80,7 +80,7 @@ func main() {
 	go waitForDeath(config)
 
 	sleepSeconds := 5
-	clog.WithFields(log.Fields{"sleepSeconds": sleepSeconds}).Info("Starting then main loop.")
+	clog.WithFields(log.Fields{"sleepSeconds": sleepSeconds}).Info("Starting the main loop.")
 	for {
 		active := nmcliConnectionActive(config)
 		if active == false {
