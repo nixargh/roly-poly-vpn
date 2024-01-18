@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -20,7 +21,7 @@ import (
 	//	"github.com/pkg/profile"
 )
 
-var version string = "1.1.1"
+var version string = "1.2.0"
 
 var clog *log.Entry
 
@@ -64,18 +65,10 @@ func main() {
 	clog.Info("Let's have some fun with 2FA VPN via NM!")
 
 	// Validate variables
-	if config == "" {
-		clog.Info("Hint: Use 'nmcli connection' to find out your config names.")
-		config = promptForSecret("config")
-	}
-
-	if password == "" {
-		password = promptForSecret("password")
-	}
-
-	if otpSecret == "" {
-		otpSecret = promptForSecret("otpSecret")
-	}
+	clog.Info("Hint: Use 'nmcli connection' to find out your config names.")
+	config = manageParameter("config", config, false)
+	password = manageParameter("password", password, true)
+	otpSecret = manageParameter("otpSecret", otpSecret, true)
 
 	go waitForDeath(config)
 
@@ -104,31 +97,59 @@ func main() {
 	}
 }
 
-func promptForSecret(secret string) string {
+func manageParameter(parameter string, parameterValue string, hide bool) string {
 	service := "roly-poly-vpn"
-	var secretValue string
 	var err error
 
-	secretValue, err = keyring.Get(service, secret)
+	// If value is empty - read from keyring or ask
+	if parameterValue == "" {
+		parameterValue, err = keyring.Get(service, parameter)
 
-	if err == nil && secretValue != "" {
-		clog.WithFields(log.Fields{"secret": secret}).Info("Got secret value from keyring.")
-		return secretValue
+		if err == nil && parameterValue != "" {
+			clog.WithFields(log.Fields{"parameter": parameter}).Info("Got parameter value from keyring.")
+			return parameterValue
+		}
+
+		fmt.Printf("New '%v' value: ", parameter)
+
+		if hide {
+			bytespw, err := term.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				log.Fatal(err)
+				clog.WithFields(log.Fields{
+					"parameter": parameter,
+					"error":     err,
+				}).Fatal("Reading hidden parameter value from cmd failed.")
+			}
+			parameterValue = string(bytespw)
+		} else {
+			scanner := bufio.NewScanner(os.Stdin)
+			scanner.Scan()
+			err := scanner.Err()
+			if err != nil {
+				log.Fatal(err)
+				clog.WithFields(log.Fields{
+					"parameter": parameter,
+					"error":     err,
+				}).Fatal("Reading parameter value from cmd failed.")
+			}
+			parameterValue = scanner.Text()
+		}
+		fmt.Print("\n")
 	}
 
-	fmt.Printf("New '%v' value: ", secret)
-	bytespw, _ := term.ReadPassword(int(syscall.Stdin))
-	secretValue = string(bytespw)
-	fmt.Print("\n")
-
-	err = keyring.Set(service, secret, secretValue)
+	// Save value gotten as flag or asked
+	err = keyring.Set(service, parameter, parameterValue)
 
 	if err != nil {
-		clog.WithFields(log.Fields{"secret": secret, "error": err}).Fatal("Can't save password to keyring.")
+		clog.WithFields(log.Fields{
+			"parameter": parameter,
+			"error":     err,
+		}).Fatal("Can't save password to keyring.")
 	}
 
-	clog.WithFields(log.Fields{"secret": secret}).Info("Secret saved to keyring.")
-	return secretValue
+	clog.WithFields(log.Fields{"parameter": parameter}).Info("Parameter's value saved to keyring.")
+	return parameterValue
 }
 
 func GeneratePassCode(secret string) string {
