@@ -17,4 +17,4 @@ I'm going to find another way or fix some of these methods but it doesn't work a
 - Set execution bit for binary: ```chmod +x ./roly-poly-vpn```
 - Move somewhere to your **PATH**. At Ubuntu I prefer `~/.local/bin/` directory: ```mv ./roly-poly-vpn ~/.local/bin/```
 - Run it and answer questions about NetworkManager VPN config name, your LDAP password and OTP secret.
-If you make a mistake and want to change the value just run **roly-poly-vpn** with flag setting this secret and it will overwritten at your keyring. Or as alternative **seahorse** utility, which is a GUI keyring manager, could be used.
+If you make a mistake and want to change the value just run **roly-poly-vpn** with flag setting this secret and it will be overwritten at your keyring. Or as alternative **seahorse** utility, which is a GUI keyring manager, could be used.
