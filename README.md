@@ -13,7 +13,7 @@ I'm going to find another way or fix some of these methods but it doesn't work a
 ## Installation
 - Import your OpenVPN configuration to NetworkManager configuration.
 - Set your login to the NM VPN config and set to "Ask password every time".
-- Download from binary from [release page](https://github.com/nixargh/tired/releases).
+- Download from binary from [release page](https://github.com/nixargh/roly-poly-vpn/releases).
 - Set execution bit for binary: ```chmod +x ./roly-poly-vpn```
 - Move somewhere to your **PATH**. At Ubuntu I prefer `~/.local/bin/` directory: ```mv ./roly-poly-vpn ~/.local/bin/```
 - Run it and answer questions about NetworkManager VPN config name, ypur LDAP password and OTP secret.
