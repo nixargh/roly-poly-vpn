@@ -1,17 +1,19 @@
+# To use this only for your user you can place this file to '~/.config/systemd/user/' directory
+
 [Unit]
-Description=Controls VPN connection with 2FA using Network Manager
-After=syslog.target network.target remote-fs.target nss-lookup.target network-online.target
-Requires=network-online.target
+Description=Roly-Poly VPN
+Documentation=https://github.com/nixargh/roly-poly-vpn
+Wants=network.target
+After=network.target
 StartLimitIntervalSec=10
 StartLimitBurst=3
 
 [Service]
-User=yourLogin
 Type=simple
-LimitNOFILE=1000
 Restart=on-failure
 RestartSec=2
-ExecStart=/home/yourLogin/.local/bin/roly-poly-vpn
+
+ExecStart=/usr/bin/env roly-poly-vpn
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

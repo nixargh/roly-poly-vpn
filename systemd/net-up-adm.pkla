@@ -1,5 +1,6 @@
 # I'm a tiny piece of audit config, please place me into '/etc/polkit-1/localauthority/50-local.d' directory.
 # I'll help you to run 'roly-poly-vpn' as systemd service.
+# Looks like you don't need this if you run service as '--user'.
 
 [Let adm group start network connections]
 Identity=unix-group:adm

@@ -64,11 +64,45 @@ func nmcliConnectionUpPasswd(password string, passcode string, config string) {
 }
 
 func nmcliConnectionUpAsk(password string, passcode string, config string) {
+	var cmd string
+
 	clog.WithFields(log.Fields{"config": config}).Info("Starting VPN connection.")
 
-	cmd := fmt.Sprintf("echo '%v%v' | nmcli connection up %v --ask", password, passcode, config)
-	basher(cmd, password)
+	// Update VPN config to ask password every time
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password-flags=2'", config)
+	basher(cmd, "")
+
+	// Answer to password request interactively
+	fullpass := fmt.Sprintf("%v%v", password, passcode)
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password=%v'", config, fullpass)
+	basher(cmd, fullpass)
+
 	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
+}
+
+func nmcliConnectionUp(config string) {
+	clog.WithFields(log.Fields{"config": config}).Info("Starting VPN connection.")
+
+	cmd := fmt.Sprintf("nmcli connection up %v", config)
+	basher(cmd, "")
+	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
+}
+
+func nmcliConnectionUpdatePassword(password string, passcode string, config string) {
+	var cmd string
+
+	clog.WithFields(log.Fields{"config": config}).Info("Updating VPN connection with a new password.")
+
+	// Update VPN config to store password only for current user
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password-flags=1'", config)
+	basher(cmd, "")
+
+	// Update VPN config with a newly generated password
+	fullpass := fmt.Sprintf("%v%v", password, passcode)
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password=%v'", config, fullpass)
+	basher(cmd, fullpass)
+
+	clog.WithFields(log.Fields{"config": config}).Info("VPN config is updated.")
 }
 
 func nmcliConnectionDown(config string) {

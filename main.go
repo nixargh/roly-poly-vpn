@@ -21,7 +21,7 @@ import (
 	//	"github.com/pkg/profile"
 )
 
-var version string = "1.2.0"
+var version string = "1.3.0"
 
 var clog *log.Entry
 
@@ -85,7 +85,8 @@ func main() {
 				passcode := GeneratePassCode(otpSecret)
 				clog.WithFields(log.Fields{"passcode": passcode}).Info("Got a new pass code.")
 
-				nmcliConnectionUpAsk(password, passcode, config)
+				nmcliConnectionUpdatePassword(password, passcode, config)
+				nmcliConnectionUp(config)
 			} else {
 				clog.Info("No active connection found thus posponding VPN connection.")
 			}
