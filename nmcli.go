@@ -88,14 +88,24 @@ func nmcliConnectionUp(config string) {
 	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
 }
 
+func nmcliConnectionUpdatePasswordFlags(config string, value int) {
+	var cmd string
+
+	clog.WithFields(log.Fields{
+		"config":         config,
+		"password-flags": value,
+	}).Debug("Updating VPN connection with a new password-flags.")
+
+	cmd = fmt.Sprintf("nmcli connection mod %v +vpn.data 'password-flags=%d'", config, value)
+	basher(cmd, "")
+
+	clog.WithFields(log.Fields{"config": config}).Debug("VPN password-flags is updated.")
+}
+
 func nmcliConnectionUpdatePassword(password string, passcode string, config string) {
 	var cmd string
 
 	clog.WithFields(log.Fields{"config": config}).Info("Updating VPN connection with a new password.")
-
-	// Update VPN config to store password only for current user
-	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password-flags=1'", config)
-	basher(cmd, "")
 
 	// Update VPN config with a newly generated password
 	fullpass := fmt.Sprintf("%v%v", password, passcode)

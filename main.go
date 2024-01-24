@@ -21,7 +21,7 @@ import (
 	//	"github.com/pkg/profile"
 )
 
-var version string = "1.3.0"
+var version string = "1.3.1"
 
 var clog *log.Entry
 
@@ -43,6 +43,9 @@ func main() {
 	flag.Parse()
 
 	// Setup logging
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
 	log.SetOutput(os.Stdout)
 
 	if showVersion {
@@ -85,8 +88,16 @@ func main() {
 				passcode := GeneratePassCode(otpSecret)
 				clog.WithFields(log.Fields{"passcode": passcode}).Info("Got a new pass code.")
 
+				// Update VPN config to store password only for current user
+				nmcliConnectionUpdatePasswordFlags(config, 1)
+
 				nmcliConnectionUpdatePassword(password, passcode, config)
+
 				nmcliConnectionUp(config)
+
+				/* Update VPN config to ask password every time.
+				That should prevent NM reconections with an old password. */
+				nmcliConnectionUpdatePasswordFlags(config, 2)
 			} else {
 				clog.Info("No active connection found thus posponding VPN connection.")
 			}

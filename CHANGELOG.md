@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2024-01-24
+### Fixed
+- `nmcli.go` fix the way NM VPN config is being updated.
+- `main.go` use full timestamp even when TTY is attached.
+
 ## [1.3.0] - 2024-01-21
 ### Added
 - `nmcli.go` new function **nmcliConnectionUpdatePassword** that updates NM VPN config with a generated password for only current user.
