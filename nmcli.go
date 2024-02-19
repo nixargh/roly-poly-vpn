@@ -49,7 +49,7 @@ func nmcliConnectionUpPasswd(password string, passcode string, config string) {
 	clog.WithFields(log.Fields{"config": config}).Info("Starting VPN connection.")
 
 	passwdFile := "/tmp/roly-poly-vpn.nmcli.passwd"
-	fullPassword := fmt.Sprintf("vpn.secrets.password:%v%v", password, passcode)
+	fullPassword := fmt.Sprintf("vpn.secrets.password:\"%v%v\"", password, passcode)
 
 	err := os.WriteFile(passwdFile, []byte(fullPassword), 0600)
 	if err != nil {
@@ -73,8 +73,8 @@ func nmcliConnectionUpAsk(password string, passcode string, config string) {
 	basher(cmd, "")
 
 	// Answer to password request interactively
-	fullpass := fmt.Sprintf("%v%v", password, passcode)
-	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password=%v'", config, fullpass)
+	fullpass := fmt.Sprintf("\"%v%v\"", password, passcode)
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets password=%v", config, fullpass)
 	basher(cmd, fullpass)
 
 	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
@@ -108,8 +108,8 @@ func nmcliConnectionUpdatePassword(password string, passcode string, config stri
 	clog.WithFields(log.Fields{"config": config}).Info("Updating VPN connection with a new password.")
 
 	// Update VPN config with a newly generated password
-	fullpass := fmt.Sprintf("%v%v", password, passcode)
-	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password=%v'", config, fullpass)
+	fullpass := fmt.Sprintf("\"%v%v\"", password, passcode)
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets password=%v", config, fullpass)
 	basher(cmd, fullpass)
 
 	clog.WithFields(log.Fields{"config": config}).Info("VPN config is updated.")

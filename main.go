@@ -21,7 +21,7 @@ import (
 	//	"github.com/pkg/profile"
 )
 
-var version string = "1.3.1"
+var version string = "1.3.2"
 
 var clog *log.Entry
 
@@ -38,7 +38,7 @@ func main() {
 	flag.StringVar(&password, "password", "", "VPN user password")
 	flag.StringVar(&otpSecret, "otpSecret", "", "VPN OTP secret")
 	flag.BoolVar(&debug, "debug", false, "Log debug messages")
-	flag.BoolVar(&showVersion, "version", false, "FunVPN version")
+	flag.BoolVar(&showVersion, "version", false, "Show version")
 
 	flag.Parse()
 
