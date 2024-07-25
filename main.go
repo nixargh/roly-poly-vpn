@@ -21,24 +21,30 @@ import (
 	//	"github.com/pkg/profile"
 )
 
-var version string = "1.3.2"
+var version string = "1.4.0"
 
 var clog *log.Entry
 
 func main() {
 	//	defer profile.Start().Stop()
 
-	var config string
-	var password string
-	var otpSecret string
 	var debug bool
 	var showVersion bool
 
-	flag.StringVar(&config, "config", "", "VPN configuration name (use 'nmcli connection' to find out)")
-	flag.StringVar(&password, "password", "", "VPN user password")
-	flag.StringVar(&otpSecret, "otpSecret", "", "VPN OTP secret")
+	var config string
+	var noSecrets bool
+	var password string
+	var otpSecret string
+
+	// Common flags
 	flag.BoolVar(&debug, "debug", false, "Log debug messages")
 	flag.BoolVar(&showVersion, "version", false, "Show version")
+
+	// VPN flags
+	flag.StringVar(&config, "config", "", "VPN configuration name (use 'nmcli connection' to find out)")
+	flag.BoolVar(&noSecrets, "noSecrets", false, "Don't use VPN password and OTP secret")
+	flag.StringVar(&password, "password", "", "VPN user password")
+	flag.StringVar(&otpSecret, "otpSecret", "", "VPN OTP secret")
 
 	flag.Parse()
 
@@ -70,8 +76,11 @@ func main() {
 	// Validate variables
 	clog.Info("Hint: Use 'nmcli connection' to find out your config names.")
 	config = manageParameter("config", config, false)
-	password = manageParameter("password", password, true)
-	otpSecret = manageParameter("otpSecret", otpSecret, true)
+
+	if noSecrets == false {
+		password = manageParameter("password", password, true)
+		otpSecret = manageParameter("otpSecret", otpSecret, true)
+	}
 
 	go waitForDeath(config)
 
@@ -85,19 +94,24 @@ func main() {
 			if len(activeConns) > 0 {
 				clog.WithFields(log.Fields{"config": config}).Info("VPN connection isn't active. Starting.")
 
-				passcode := GeneratePassCode(otpSecret)
-				clog.WithFields(log.Fields{"passcode": passcode}).Info("Got a new pass code.")
+				if noSecrets {
+					nmcliConnectionUp(config)
+				} else {
+					passcode := GeneratePassCode(otpSecret)
+					clog.WithFields(log.Fields{"passcode": passcode}).Info("Got a new pass code.")
 
-				// Update VPN config to store password only for current user
-				nmcliConnectionUpdatePasswordFlags(config, 1)
+					// Update VPN config to store password only for current user
+					nmcliConnectionUpdatePasswordFlags(config, 1)
 
-				nmcliConnectionUpdatePassword(password, passcode, config)
+					nmcliConnectionUpdatePassword(password, passcode, config)
 
-				nmcliConnectionUp(config)
+					nmcliConnectionUp(config)
 
-				/* Update VPN config to ask password every time.
-				That should prevent NM reconections with an old password. */
-				nmcliConnectionUpdatePasswordFlags(config, 2)
+					/* Update VPN config to ask password every time.
+					That should prevent NM reconections with an old password. */
+					nmcliConnectionUpdatePasswordFlags(config, 2)
+				}
+
 			} else {
 				clog.Info("No active connection found thus posponding VPN connection.")
 			}
