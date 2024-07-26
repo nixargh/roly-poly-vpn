@@ -13,7 +13,7 @@ Prepared to be run as a *per-user service* but one may also try to run it system
 - Import your OpenVPN configuration to NetworkManager configuration.
 - Download from binary from [release page](https://github.com/nixargh/roly-poly-vpn/releases).
 - Set execution bit for binary: ```chmod +x ./roly-poly-vpn```
-- Move somewhere to your **PATH**. At Ubuntu I prefer `~/.local/bin/` directory: ```mv ./roly-poly-vpn ~/.local/bin/```
+- Move somewhere to your **PATH**. At Ubuntu I prefer `~/.local/bin/` directory: ```mv ./roly-poly-vpn ~/.local/bin/```.
 - Run it and answer questions about NetworkManager VPN config name, your LDAP password and OTP secret.
 If you make a mistake and want to change the value just run **roly-poly-vpn** with flag setting this secret and it will be overwritten at your keyring. Or as alternative **seahorse** utility, which is a GUI keyring manager, could be used.
 - In case you like to run **roly-poly-vpn** as a **per-user systemd** service, do like this:  
@@ -22,3 +22,6 @@ cp ./systemd/roly-poly-vpn.service ~/.config/systemd/user/
 systemctl --user enable roly-poly-vpn.service
 systemctl --user start roly-poly-vpn.service
 ```
+
+## Options
+- `-noSecrets` flag diables all logic that set VPN password and OTP secret. So you can control any VPN and any other connection configured at NetworkManager.

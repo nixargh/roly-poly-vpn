@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2024-07-25
+### Added
+- `main.go` new flag **-noSecrets** that allows to control any connection without changing password (and anything else).
+
+### Fixed
+- `main.go` check whether `config` connection is active before try to get it down on termination.
+- `nmcli.go` change **nmcliGetActiveConnections** function logic to list all connections or only physical (wifi, ethernet). This should prevent periodic failures because of some tunnel etc.
+
 ## [1.3.2] - 2024-01-24
 ### Fixed
 - `nmcli.go` issue when password contains a single quote sign.

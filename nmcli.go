@@ -9,7 +9,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func nmcliGetActiveConnections(excludeBridge bool) []string {
+func nmcliGetActiveConnections(physical bool) []string {
 	output := basher("nmcli -f NAME,TYPE -t connection show --active", "")
 	var connections, filteredConnections []string
 
@@ -22,20 +22,26 @@ func nmcliGetActiveConnections(excludeBridge bool) []string {
 		splitCon := strings.Split(connections[i], ":")
 		name := splitCon[0]
 		cType := splitCon[1]
-		clog.WithFields(log.Fields{"name": name, "type": cType}).Debug("Connections name and type.")
 
-		if cType == "bridge" && excludeBridge == true {
+		isPhysical := false
+		if strings.HasSuffix(cType, "ethernet") || strings.HasSuffix(cType, "wireless") {
+			isPhysical = true
+		}
+
+		clog.WithFields(log.Fields{"name": name, "type": cType, "isPhysical": isPhysical}).Debug("Connections name and type.")
+
+		if physical && !isPhysical {
 			continue
 		}
 		filteredConnections = append(filteredConnections, name)
 	}
 
-	clog.WithFields(log.Fields{"connections": filteredConnections, "excludeBridge": excludeBridge}).Debug("Filtered active connections found.")
+	clog.WithFields(log.Fields{"connections": filteredConnections, "physical": physical}).Debug("Filtered active connections found.")
 	return filteredConnections
 }
 
-func nmcliConnectionActive(config string) bool {
-	connections := nmcliGetActiveConnections(false)
+func nmcliConnectionActive(config string, physical bool) bool {
+	connections := nmcliGetActiveConnections(physical)
 	index := slices.Index(connections, config)
 
 	if index == -1 {
