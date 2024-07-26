@@ -77,7 +77,7 @@ func main() {
 	clog.Info("Hint: Use 'nmcli connection' to find out your config names.")
 	config = manageParameter("config", config, false)
 
-	if noSecrets == false {
+	if !noSecrets {
 		password = manageParameter("password", password, true)
 		otpSecret = manageParameter("otpSecret", otpSecret, true)
 	}
@@ -87,8 +87,8 @@ func main() {
 	sleepSeconds := 5
 	clog.WithFields(log.Fields{"sleepSeconds": sleepSeconds}).Info("Starting the main loop.")
 	for {
-		active := nmcliConnectionActive(config)
-		if active == false {
+		active := nmcliConnectionActive(config, false)
+		if !active {
 			// Check whether any network connection is active
 			activeConns := nmcliGetActiveConnections(true)
 			if len(activeConns) > 0 {
@@ -113,7 +113,7 @@ func main() {
 				}
 
 			} else {
-				clog.Info("No active connection found thus posponding VPN connection.")
+				clog.Info("No active connection found, thus posponding VPN connection.")
 			}
 		}
 		clog.WithFields(log.Fields{"config": config, "sleepSeconds": sleepSeconds}).Debug("Connection is active. Sleeping.")
@@ -222,7 +222,10 @@ func waitForDeath(config string) {
 		sig := <-cancelChan
 		clog.WithFields(log.Fields{"signal": sig}).Info("Caught signal. Terminating.")
 
-		nmcliConnectionDown(config)
+		active := nmcliConnectionActive(config, false)
+		if active {
+			nmcliConnectionDown(config)
+		}
 
 		clog.WithFields(log.Fields{"signal": sig}).Info("We are good to go, see you next time!.")
 		os.Exit(0)
