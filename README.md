@@ -24,4 +24,4 @@ systemctl --user start roly-poly-vpn.service
 ```
 
 ## Options
-- `-noSecrets` flag diables all logic that set VPN password and OTP secret. So you can control any VPN and any other connection configured at NetworkManager.
+- `-instance` flag allows to have multiple sets of settings to control many VPN (and other) connections. Every set of settings is stored at keyring as JSON string inside its own named key. At Gnome Keyring it looks like `Password for 'default' on 'roly-poly-vpn'`.

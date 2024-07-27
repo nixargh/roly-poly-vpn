@@ -40,9 +40,9 @@ func nmcliGetActiveConnections(physical bool) []string {
 	return filteredConnections
 }
 
-func nmcliConnectionActive(config string, physical bool) bool {
+func nmcliConnectionActive(connection string, physical bool) bool {
 	connections := nmcliGetActiveConnections(physical)
-	index := slices.Index(connections, config)
+	index := slices.Index(connections, connection)
 
 	if index == -1 {
 		return false
@@ -51,8 +51,8 @@ func nmcliConnectionActive(config string, physical bool) bool {
 	}
 }
 
-func nmcliConnectionUpPasswd(password string, passcode string, config string) {
-	clog.WithFields(log.Fields{"config": config}).Info("Starting VPN connection.")
+func nmcliConnectionUpPasswd(password string, passcode string, connection string) {
+	clog.WithFields(log.Fields{"connection": connection}).Info("Starting VPN connection.")
 
 	passwdFile := "/tmp/roly-poly-vpn.nmcli.passwd"
 	fullPassword := fmt.Sprintf("vpn.secrets.password:\"%v%v\"", password, passcode)
@@ -62,67 +62,67 @@ func nmcliConnectionUpPasswd(password string, passcode string, config string) {
 		clog.WithFields(log.Fields{"file": passwdFile, "error": err}).Fatal("Can't create temporary passwd file for nmcli.")
 	}
 
-	cmd := fmt.Sprintf("nmcli connection up %v passwd-file %v", config, passwdFile)
+	cmd := fmt.Sprintf("nmcli connection up %v passwd-file %v", connection, passwdFile)
 	basher(cmd, password)
-	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
+	clog.WithFields(log.Fields{"connection": connection}).Info("VPN is connected.")
 
 	os.Remove(passwdFile)
 }
 
-func nmcliConnectionUpAsk(password string, passcode string, config string) {
+func nmcliConnectionUpAsk(password string, passcode string, connection string) {
 	var cmd string
 
-	clog.WithFields(log.Fields{"config": config}).Info("Starting VPN connection.")
+	clog.WithFields(log.Fields{"connection": connection}).Info("Starting VPN connection.")
 
 	// Update VPN config to ask password every time
-	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password-flags=2'", config)
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets 'password-flags=2'", connection)
 	basher(cmd, "")
 
 	// Answer to password request interactively
 	fullpass := fmt.Sprintf("\"%v%v\"", password, passcode)
-	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets password=%v", config, fullpass)
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets password=%v", connection, fullpass)
 	basher(cmd, fullpass)
 
-	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
+	clog.WithFields(log.Fields{"connection": connection}).Info("VPN is connected.")
 }
 
-func nmcliConnectionUp(config string) {
-	clog.WithFields(log.Fields{"config": config}).Info("Starting VPN connection.")
+func nmcliConnectionUp(connection string) {
+	clog.WithFields(log.Fields{"connection": connection}).Info("Starting VPN connection.")
 
-	cmd := fmt.Sprintf("nmcli connection up %v", config)
+	cmd := fmt.Sprintf("nmcli connection up %v", connection)
 	basher(cmd, "")
-	clog.WithFields(log.Fields{"config": config}).Info("VPN is connected.")
+	clog.WithFields(log.Fields{"connection": connection}).Info("VPN is connected.")
 }
 
-func nmcliConnectionUpdatePasswordFlags(config string, value int) {
+func nmcliConnectionUpdatePasswordFlags(connection string, value int) {
 	var cmd string
 
 	clog.WithFields(log.Fields{
-		"config":         config,
+		"connection":     connection,
 		"password-flags": value,
 	}).Debug("Updating VPN connection with a new password-flags.")
 
-	cmd = fmt.Sprintf("nmcli connection mod %v +vpn.data 'password-flags=%d'", config, value)
+	cmd = fmt.Sprintf("nmcli connection mod %v +vpn.data 'password-flags=%d'", connection, value)
 	basher(cmd, "")
 
-	clog.WithFields(log.Fields{"config": config}).Debug("VPN password-flags is updated.")
+	clog.WithFields(log.Fields{"connection": connection}).Debug("VPN password-flags is updated.")
 }
 
-func nmcliConnectionUpdatePassword(password string, passcode string, config string) {
+func nmcliConnectionUpdatePassword(password string, passcode string, connection string) {
 	var cmd string
 
-	clog.WithFields(log.Fields{"config": config}).Info("Updating VPN connection with a new password.")
+	clog.WithFields(log.Fields{"connection": connection}).Info("Updating VPN connection with a new password.")
 
 	// Update VPN config with a newly generated password
 	fullpass := fmt.Sprintf("\"%v%v\"", password, passcode)
-	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets password=%v", config, fullpass)
+	cmd = fmt.Sprintf("nmcli connection mod %v vpn.secrets password=%v", connection, fullpass)
 	basher(cmd, fullpass)
 
-	clog.WithFields(log.Fields{"config": config}).Info("VPN config is updated.")
+	clog.WithFields(log.Fields{"connection": connection}).Info("VPN connection is updated.")
 }
 
-func nmcliConnectionDown(config string) {
-	clog.WithFields(log.Fields{"config": config}).Info("Stopping VPN connection.")
-	cmd := fmt.Sprintf("nmcli connection down %v", config)
+func nmcliConnectionDown(connection string) {
+	clog.WithFields(log.Fields{"connection": connection}).Info("Stopping VPN connection.")
+	cmd := fmt.Sprintf("nmcli connection down %v", connection)
 	basher(cmd, "")
 }
