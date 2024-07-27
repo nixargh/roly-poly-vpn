@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - Unrelased
+## [2.0.0] - Unreleased
 The format of settings at Keyring changed. So please remove old Keyring keys containg `roly-poly-vpn` at their names. After start you will be asked for new settings.
 To remove old Keyrings records I prefere to use `seahorse` utillity.
 
