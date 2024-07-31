@@ -11,17 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/term"
-
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
-	"github.com/zalando/go-keyring"
-
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/term"
 	//	"github.com/pkg/profile"
 )
 
-var version string = "1.4.0"
+var version string = "2.0.0"
 
 var clog *log.Entry
 
@@ -31,8 +28,9 @@ func main() {
 	var debug bool
 	var showVersion bool
 
-	var config string
-	var noSecrets bool
+	var instance string
+
+	var connection string
 	var password string
 	var otpSecret string
 
@@ -40,9 +38,10 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "Log debug messages")
 	flag.BoolVar(&showVersion, "version", false, "Show version")
 
+	flag.StringVar(&instance, "instance", "default", "Configuration instance name to save config to.")
+
 	// VPN flags
-	flag.StringVar(&config, "config", "", "VPN configuration name (use 'nmcli connection' to find out)")
-	flag.BoolVar(&noSecrets, "noSecrets", false, "Don't use VPN password and OTP secret")
+	flag.StringVar(&connection, "connection", "", "VPN connection name (use 'nmcli connection' to find out)")
 	flag.StringVar(&password, "password", "", "VPN user password")
 	flag.StringVar(&otpSecret, "otpSecret", "", "VPN OTP secret")
 
@@ -73,108 +72,122 @@ func main() {
 
 	clog.Info("Let's have some fun with 2FA VPN via NM!")
 
-	// Validate variables
-	clog.Info("Hint: Use 'nmcli connection' to find out your config names.")
-	config = manageParameter("config", config, false)
+	var config Config
+	config.read(instance)
 
-	if !noSecrets {
-		password = manageParameter("password", password, true)
-		otpSecret = manageParameter("otpSecret", otpSecret, true)
+	// Overriding or settings instance config parameters.
+	clog.Debug("Configuring connection name.")
+	if connection != "" {
+		config.Connection = connection
+	} else {
+		if config.Connection == "" {
+			clog.Info("Hint: Use 'nmcli connection' to find out your config names.")
+			config.Connection = askValue("connection", false)
+		}
 	}
 
-	go waitForDeath(config)
+	clog.Debug("Configuring password.")
+	if password != "" {
+		config.Password = password
+	} else {
+		if config.Password == "" {
+			config.Password = askValue("password", true)
+		}
+	}
+
+	clog.Debug("Configuring OTP secret.")
+	if otpSecret != "" {
+		config.OtpSecret = connection
+	} else {
+		if config.OtpSecret == "" {
+			config.OtpSecret = askValue("OTP secret", true)
+		}
+	}
+
+	// Save currently built config
+	config.write(instance)
+
+	go waitForDeath(config.Connection)
 
 	sleepSeconds := 5
 	clog.WithFields(log.Fields{"sleepSeconds": sleepSeconds}).Info("Starting the main loop.")
 	for {
-		active := nmcliConnectionActive(config, false)
+		active := nmcliConnectionActive(config.Connection, false)
 		if !active {
 			// Check whether any network connection is active
 			activeConns := nmcliGetActiveConnections(true)
 			if len(activeConns) > 0 {
-				clog.WithFields(log.Fields{"config": config}).Info("VPN connection isn't active. Starting.")
+				clog.WithFields(log.Fields{
+					"connection": config.Connection,
+				}).Info("VPN connection isn't active. Starting.")
 
-				if noSecrets {
-					nmcliConnectionUp(config)
-				} else {
-					passcode := GeneratePassCode(otpSecret)
+				if config.Password != "Null" && config.OtpSecret != "Null" {
+					passcode := GeneratePassCode(config.OtpSecret)
 					clog.WithFields(log.Fields{"passcode": passcode}).Info("Got a new pass code.")
 
 					// Update VPN config to store password only for current user
-					nmcliConnectionUpdatePasswordFlags(config, 1)
+					nmcliConnectionUpdatePasswordFlags(config.Connection, 1)
 
-					nmcliConnectionUpdatePassword(password, passcode, config)
+					nmcliConnectionUpdatePassword(config.Password, passcode, config.Connection)
 
-					nmcliConnectionUp(config)
+					nmcliConnectionUp(config.Connection)
 
-					/* Update VPN config to ask password every time.
-					That should prevent NM reconections with an old password. */
-					nmcliConnectionUpdatePasswordFlags(config, 2)
+					// Update VPN config to ask password every time.
+					// That should prevent NM reconections with an old password.
+					nmcliConnectionUpdatePasswordFlags(config.Connection, 2)
+				} else {
+					nmcliConnectionUp(config.Connection)
 				}
 
 			} else {
 				clog.Info("No active connection found, thus posponding VPN connection.")
 			}
 		}
-		clog.WithFields(log.Fields{"config": config, "sleepSeconds": sleepSeconds}).Debug("Connection is active. Sleeping.")
+		clog.WithFields(log.Fields{
+			"connection":   config.Connection,
+			"sleepSeconds": sleepSeconds,
+		}).Debug("Connection is active. Sleeping.")
 
 		// Sleep for a minute
 		time.Sleep(time.Duration(sleepSeconds) * time.Second)
 	}
 }
 
-func manageParameter(parameter string, parameterValue string, hide bool) string {
-	service := "roly-poly-vpn"
-	var err error
+func askValue(parameter string, hide bool) string {
+	var parameterValue string
 
-	// If value is empty - read from keyring or ask
+	fmt.Printf("New '%v' value: ", parameter)
+
+	if hide {
+		bytespw, err := term.ReadPassword(int(syscall.Stdin))
+		if err != nil {
+			log.Fatal(err)
+			clog.WithFields(log.Fields{
+				"parameter": parameter,
+				"error":     err,
+			}).Fatal("Reading hidden parameter value from cmd failed.")
+		}
+		parameterValue = string(bytespw)
+	} else {
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		err := scanner.Err()
+		if err != nil {
+			log.Fatal(err)
+			clog.WithFields(log.Fields{
+				"parameter": parameter,
+				"error":     err,
+			}).Fatal("Reading parameter value from cmd failed.")
+		}
+		parameterValue = scanner.Text()
+	}
+	fmt.Print("\n")
+
+	// To understand when we have an empty password and when we just haven't set it yet.
 	if parameterValue == "" {
-		parameterValue, err = keyring.Get(service, parameter)
-
-		if err == nil && parameterValue != "" {
-			clog.WithFields(log.Fields{"parameter": parameter}).Info("Got parameter value from keyring.")
-			return parameterValue
-		}
-
-		fmt.Printf("New '%v' value: ", parameter)
-
-		if hide {
-			bytespw, err := term.ReadPassword(int(syscall.Stdin))
-			if err != nil {
-				log.Fatal(err)
-				clog.WithFields(log.Fields{
-					"parameter": parameter,
-					"error":     err,
-				}).Fatal("Reading hidden parameter value from cmd failed.")
-			}
-			parameterValue = string(bytespw)
-		} else {
-			scanner := bufio.NewScanner(os.Stdin)
-			scanner.Scan()
-			err := scanner.Err()
-			if err != nil {
-				log.Fatal(err)
-				clog.WithFields(log.Fields{
-					"parameter": parameter,
-					"error":     err,
-				}).Fatal("Reading parameter value from cmd failed.")
-			}
-			parameterValue = scanner.Text()
-		}
-		fmt.Print("\n")
+		parameterValue = "Null"
 	}
 
-	// Save value gotten as flag or asked
-	err = keyring.Set(service, parameter, parameterValue)
-
-	if err != nil {
-		clog.WithFields(log.Fields{
-			"parameter": parameter,
-			"error":     err,
-		}).Fatal("Can't save password to keyring.")
-	}
-
-	clog.WithFields(log.Fields{"parameter": parameter}).Info("Parameter's value saved to keyring.")
 	return parameterValue
 }
 
@@ -211,7 +224,7 @@ func basher(command string, hide string) string {
 	return output
 }
 
-func waitForDeath(config string) {
+func waitForDeath(connection string) {
 	clog.Info("Starting Wait For Death loop.")
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
@@ -222,9 +235,9 @@ func waitForDeath(config string) {
 		sig := <-cancelChan
 		clog.WithFields(log.Fields{"signal": sig}).Info("Caught signal. Terminating.")
 
-		active := nmcliConnectionActive(config, false)
+		active := nmcliConnectionActive(connection, false)
 		if active {
-			nmcliConnectionDown(config)
+			nmcliConnectionDown(connection)
 		}
 
 		clog.WithFields(log.Fields{"signal": sig}).Info("We are good to go, see you next time!.")

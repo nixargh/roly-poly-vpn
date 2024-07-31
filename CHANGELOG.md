@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2024-07-31
+The format of settings at Keyring changed. So please remove old Keyring keys containg `roly-poly-vpn` at their names. After start you will be asked for new settings.
+To remove old Keyrings records I prefere to use `seahorse` utillity.
+
+### Removed
+- `main.go` recently added **-noSecrets** flag.
+- `main.go` **-config** flag in favor of **-connection** flag.
+
+### Added
+- `main.go` **-connection** flag as a replacement for **-config** flag.
+- `config.go` that contains **Config** type and its methods.
+
+### Changed
+- The logic of working with configuration. Now it is possible to store many sets of configurations at Keyring as JSON string using separate `instance` identifiers (**-instance** flag). This makes old configs obsolete.
+
 ## [1.4.0] - 2024-07-25
 ### Added
 - `main.go` new flag **-noSecrets** that allows to control any connection without changing password (and anything else).
